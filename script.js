@@ -31,7 +31,7 @@ function afficherListes() {
         listeElement.innerHTML = `
             <h3>${liste.nom}</h3>
             <button onclick="supprimerListe(${index})">Supprimer liste</button>
-            <div>
+            <div class="newtache">
                 <input type="text" id="nouvelleTache${index}" placeholder="Nouvelle tâche">
                 <button onclick="ajouterTache(${index})">Ajouter tâche</button>
             </div>
@@ -90,6 +90,6 @@ function toggleTache(listeIndex, tacheIndex) {
     sauvegarderListes(listes);
     afficherListes();
 }
-    
+
 // Appeler cette fonction au chargement de la page
 window.onload = afficherListes;
