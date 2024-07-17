@@ -1,32 +1,47 @@
-// Fonction pour sauvegarder les listes
-function sauvegarderListes(listes) {
-    localStorage.setItem('listes', JSON.stringify(listes));
-}
+// URL de base de votre API
+const API_URL = 'http://localhost:3000';
 
 // Fonction pour récupérer les listes
-function recupererListes() {
-    return JSON.parse(localStorage.getItem('listes')) || [];
-}
-
-// Fonction pour ajouter une liste
-function ajouterListe() {
-    const nomListe = document.getElementById("nomListe").value;
-    if (nomListe) {
-        let listes = recupererListes();
-        listes.push({ nom: nomListe, taches: [] });
-        sauvegarderListes(listes);
-        afficherListes();
-        document.getElementById("nomListe").value = "";
+async function recupererListes() {
+    try {
+        const response = await fetch(`${API_URL}/tasks`);
+        if (!response.ok) throw new Error('Erreur lors de la récupération des listes');
+        return await response.json();
+    } catch (error) {
+        console.error('Erreur:', error);
+        return [];
     }
 }
 
+// Fonction pour ajouter une liste
+async function ajouterListe() {
+    const nomListe = document.getElementById("nomListe").value;
+    if (nomListe) {
+        try {
+            const response = await fetch(`${API_URL}/tasks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title: nomListe, taches: [] }),
+            });
+            if (!response.ok) throw new Error('Erreur lors de l\'ajout de la liste');
+            await afficherListes();
+            document.getElementById("nomListe").value = "";
+        } catch (error) {
+            console.error('Erreur:', error);
+        }
+    }
+}
+
+
 // Fonction pour afficher les listes
-function afficherListes() {
+async function afficherListes() {
     const listesContainer = document.getElementById("listes");
     listesContainer.innerHTML = '';
-    const listes = recupererListes();
+    const listes = await recupererListes();
     
-    listes.forEach((liste, index) => {
+    listes.forEach((liste) => {
         const listeElement = document.createElement("li");
         listeElement.innerHTML = `
             <h3>${liste.nom}</h3>
@@ -53,25 +68,40 @@ function afficherListes() {
     });
 }
 
-
-// Fonction pour supprimer une liste
-function supprimerListe(index) {
-    let listes = recupererListes();
-    listes.splice(index, 1);
-    sauvegarderListes(listes);
-    afficherListes();
+// fonction pour supprimer une liste
+async function supprimerListe(id) {
+    try {
+        const response = await fetch(`${API_URL}/tasks/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Erreur lors de la suppression de la liste');
+        await afficherListes();
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
 }
 
 // Fonction pour ajouter une tâche
-function ajouterTache(listeIndex) {
-    const inputTache = document.getElementById(`nouvelleTache${listeIndex}`);
+async function ajouterTache(listeId) {
+    const inputTache = document.getElementById(`nouvelleTache${listeId}`);
     const nomTache = inputTache.value.trim();
     if (nomTache) {
-        let listes = recupererListes();
-        listes[listeIndex].taches.push({ texte: nomTache, terminee: false });
-        sauvegarderListes(listes);
-        afficherListes();
-        inputTache.value = "";
+        try {
+            const response = await fetch(`${API_URL}/tasks/${listeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    taches: [...listes[listeId].taches, { texte: nomTache, terminee: false }]
+                }),
+            });
+            if (!response.ok) throw new Error('Erreur lors de l\'ajout de la tâche');
+            await afficherListes();
+            inputTache.value = "";
+        } catch (error) {
+            console.error('Erreur:', error);
+        }
     }
 }
 
@@ -92,4 +122,6 @@ function toggleTache(listeIndex, tacheIndex) {
 }
 
 // Appeler cette fonction au chargement de la page
-window.onload = afficherListes;
+window.onload = async () => {
+    await afficherListes();
+};
