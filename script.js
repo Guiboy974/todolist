@@ -45,10 +45,10 @@ async function afficherListes() {
         const listeElement = document.createElement("li");
         listeElement.innerHTML = `
             <h3>${liste.nom}</h3>
-            <button onclick="supprimerListe(${index})">Supprimer liste</button>
+            <button onclick="supprimerListe(${liste._id})">Supprimer liste</button>
             <div class="newtache">
-                <input type="text" id="nouvelleTache${index}" placeholder="Nouvelle tâche">
-                <button onclick="ajouterTache(${index})">Ajouter tâche</button>
+                <input type="text" id="nouvelleTache${liste._id}" placeholder="Nouvelle tâche">
+                <button onclick="ajouterTache(${liste._id})">Ajouter tâche</button>
             </div>
             <ul class="taches"></ul>
         `;
@@ -93,7 +93,7 @@ async function ajouterTache(listeId) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    taches: [...listes[listeId].taches, { texte: nomTache, terminee: false }]
+                    taches: { $push: { texte: nomTache, terminee: false }}
                 }),
             });
             if (!response.ok) throw new Error('Erreur lors de l\'ajout de la tâche');
@@ -106,21 +106,34 @@ async function ajouterTache(listeId) {
 }
 
 // Fonction pour supprimer une tâche
-function supprimerTache(listeIndex, tacheIndex) {
-    let listes = recupererListes();
-    listes[listeIndex].taches.splice(tacheIndex, 1);
-    sauvegarderListes(listes);
-    afficherListes();
+async function supprimerTache(listeId, tacheIndex) {
+    try {
+        const response = await fetch(`${API_URL}/tasks/${listeId}/taches/${tacheIndex}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Erreur lors de la suppression de la tâche');
+        await afficherListes();
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
 }
 
 // Fonction pour marquer une tâche comme terminée ou non
-function toggleTache(listeIndex, tacheIndex) {
-    let listes = recupererListes();
-    listes[listeIndex].taches[tacheIndex].terminee = !listes[listeIndex].taches[tacheIndex].terminee;
-    sauvegarderListes(listes);
-    afficherListes();
+async function toggleTache(listeId, tacheIndex) {
+    try {
+        const response = await fetch(`${API_URL}/tasks/${listeId}/taches/${tacheIndex}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ terminee: true }), // ou false, selon l'état actuel
+        });
+        if (!response.ok) throw new Error('Erreur lors de la mise à jour de la tâche');
+        await afficherListes();
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
 }
-
 // Appeler cette fonction au chargement de la page
 window.onload = async () => {
     await afficherListes();
